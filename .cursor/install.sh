@@ -38,9 +38,9 @@ install_ubuntu_tools() {
   sudo update-alternatives --set awk /usr/bin/gawk
   sudo update-alternatives --install /usr/bin/lua lua /usr/bin/lua5.4 100
 
-  if ! command -v magick >/dev/null; then
+  if ! command -v magick >/dev/null || [[ $(magick -version) == *"ImageMagick 6."* ]]; then
     if command -v convert >/dev/null; then
-      sudo ln -sfn "$(command -v convert)" /usr/local/bin/magick
+      sudo install -m 755 "$(dirname "${BASH_SOURCE[0]}")/magick" /usr/local/bin/magick
     fi
   fi
 }

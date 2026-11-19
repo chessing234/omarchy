@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# ImageMagick 6 has separate executables; magick also dispatches subcommands.
+case ${1:-} in
+  convert|identify|compare|composite|montage|mogrify|stream)
+    command=$1
+    shift
+    exec "$command" "$@"
+    ;;
+  *) exec convert "$@" ;;
+esac
