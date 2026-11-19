@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # omarchy:summary=Set the system timezone and remember it for the current Wi-Fi network
-# omarchy:args=[--detected <wifi|ip|network> --expect <zone> | --undo] <zone>
+# omarchy:args=[--quiet | --detected <wifi|ip|network> --expect <zone> | --undo] <zone>
 # omarchy:hidden=true
 
 # The one place the clock is moved from, by hand (the timezone menu), by the
@@ -9,6 +9,7 @@
 # watcher's notification (--undo). Each remembers the zone for the access
 # point Wi-Fi is on, so the watcher knows that network's zone from then on
 # and never argues with a choice made there.
+# Elsewhen uses --quiet because its panel confirms the successful change.
 #
 # Goes through the passwordless `timedatectl set-timezone` rule
 # (etc/sudoers.d/omarchy-tzupdate) with sudo -n: none of the callers has a
@@ -29,14 +30,19 @@ readonly STATE_DIR="$HOME/.local/state/omarchy/timezone"
 readonly GLOBE_GLYPH=$'\ueb01'
 
 usage() {
-  echo "Usage: omarchy-timezone-set [--detected <wifi|ip|network> --expect <zone> | --undo] <zone>" >&2
+  echo "Usage: omarchy-timezone-set [--quiet | --detected <wifi|ip|network> --expect <zone> | --undo] <zone>" >&2
   exit 1
 }
 
 detected=
 expect=
 undo=0
+quiet=0
 case ${1:-} in
+  --quiet)
+    quiet=1
+    shift
+    ;;
   --detected)
     detected=${2:-}
     [[ $detected == "wifi" || $detected == "ip" || $detected == "network" ]] || usage
@@ -106,6 +112,6 @@ if [[ -n $detected && $zone != "$previous" ]]; then
     "$reason" \
     --action "$(omarchy-i18n timezone.undo)" omarchy-timezone-set --undo \
     --with "$previous"
-elif [[ -z $detected ]]; then
+elif [[ -z $detected ]] && (( quiet == 0 )); then
   omarchy-notification-send -g "$GLOBE_GLYPH" "$(omarchy-i18n timezone.changed "$zone")"
 fi

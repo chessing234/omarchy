@@ -419,12 +419,11 @@ function hereAfterPick(zones, current, pick, localZone) {
   return { here: here, zones: out, zoneChange: "" }
 }
 
-// argv that moves this machine's clock to `zone` through the passwordless
-// `timedatectl set-timezone` rule the timezone menu uses (etc/sudoers.d/omarchy-tzupdate),
-// then tells the bar clock. `-n`: a missing rule fails rather than waiting on a
-// password nobody can type. The zone is an argument, never script text.
+// Use the timezone menu's setter so a manual Here choice is remembered for
+// this access point and wins over automatic detection. The setter owns the
+// passwordless timedatectl call and bar refresh; the panel confirms success.
 function timezoneCommand(zone) {
-  return ["bash", "-c", 'sudo -n timedatectl set-timezone "$1" && omarchy-shell -q omarchy.clock refresh', "bash", String(zone)]
+  return ["omarchy-timezone-set", "--quiet", String(zone)]
 }
 
 // ---- people

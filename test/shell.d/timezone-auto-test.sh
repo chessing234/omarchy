@@ -254,6 +254,25 @@ run omarchy-timezone-set Europe/Paris
 grep -Fq "Timezone is now set to Europe/Paris" "$STUB/notify-log" || fail "a manual pick is confirmed" "$(cat "$STUB/notify-log")"
 pass "a manual pick wins on its network"
 
+# Elsewhen's Here picker must use the same setter as the timezone menu,
+# including when automatic detection already has a different candidate.
+reset_world
+run omarchy-timezone-watch --check >/dev/null
+run node - "$ROOT" <<'JS'
+const { spawnSync } = require('child_process')
+const M = require(process.argv[2] + '/shell/plugins/panels/elsewhen/Model.js')
+const command = M.timezoneCommand('Europe/Paris')
+const result = spawnSync(command[0], command.slice(1), { stdio: 'inherit' })
+if (result.error) throw result.error
+process.exit(result.status === null ? 1 : result.status)
+JS
+[[ $(cat "$state/networks/001a2b3c4d5e") == "Europe/Paris" ]] || fail "Elsewhen's pick is not remembered for its network"
+[[ ! -f $state/candidate ]] || fail "Elsewhen's pick leaves a stale automatic candidate"
+[[ ! -f $STUB/notify-log ]] || fail "Elsewhen's pick gets a second success notification from the setter"
+run omarchy-timezone-watch --check >/dev/null
+[[ $(cat "$STUB/zone") == "Europe/Paris" ]] || fail "automatic detection overrides Elsewhen's pick"
+pass "Elsewhen's manual pick is remembered and wins over automatic detection"
+
 reset_world
 : >"$STUB/in-use"
 run omarchy-timezone-watch --check >/dev/null
