@@ -225,7 +225,8 @@ def unit_active() -> bool:
 
 def server_answers() -> bool:
   try:
-    with urllib.request.urlopen(f"http://127.0.0.1:{PORT}/v1/models", timeout=3) as response:
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    with opener.open(f"http://127.0.0.1:{PORT}/v1/models", timeout=3) as response:
       return response.status == 200
   except (OSError, urllib.error.URLError):
     return False
@@ -621,7 +622,9 @@ def warm_up(recipe: dict) -> None:
     body = json.dumps({"model": recipe["id"], "max_tokens": 8, "messages": [{"role": "user", "content": prompt}], "chat_template_kwargs": {"enable_thinking": False}}).encode()
     request = urllib.request.Request(f"http://127.0.0.1:{PORT}/v1/chat/completions", body, {"Content-Type": "application/json"})
     try:
-      urllib.request.urlopen(request, timeout=900).read()
+      opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+      with opener.open(request, timeout=900) as response:
+        response.read()
     except (OSError, urllib.error.URLError):
       return
 
