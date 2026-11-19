@@ -62,7 +62,7 @@ LEVELS.forEach((def, index) => {
     process.exitCode = 1;
     console.log(`${label} NOT BEATEN`);
     def.map.forEach((row, r) => console.log([...row].map((ch, c) => ch === '.' && result.reached.has(c + ',' + r) ? '+' : ch).join('')));
-  } else if (mode === '--replay') replay.push(result.path);
+  } else if (mode === '--replay') replay[index] = result.path;
   else console.log(`${label} beaten in ${result.time.toFixed(1).padStart(4)}s`);
 });
 if (mode === '--replay') console.log(replay.join('.'));
