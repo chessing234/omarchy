@@ -15,18 +15,27 @@ if [[ ${1:-} == "--if-changed" ]]; then
   if_changed=true
 fi
 
-# The templates omarchy-theme-set-templates renders, by name and content, so an
-# added, removed or edited template all change it. A linked template counts by
-# what it points at, as the renderer reads it.
+# The templates and selected icon artwork the theme set renders, by name and
+# content, so additions, removals and edits all count. A linked template counts
+# by what it points at, as the renderer reads it.
 templates_fingerprint() {
-  local source dir template
+  local source dir template icon_set
+  local -a templates
+
+  icon_set=$(omarchy-icons-current --id)
 
   shopt -s nullglob
-  for source in "default:$OMARCHY_PATH/default/themed" "user:$HOME/.config/omarchy/themed"; do
+  for source in "default:$OMARCHY_PATH/default/themed" "user:$HOME/.config/omarchy/themed" \
+    "default-icons:$OMARCHY_PATH/icons/$icon_set" "user-icons:$HOME/.config/omarchy/icons/$icon_set"; do
     dir=${source#*:}
     [[ -d $dir ]] || continue
     echo "${source%%:*}"
-    for template in "$dir"/*.tpl; do
+    if [[ $source == *-icons:* ]]; then
+      templates=("$dir"/*.svg "$dir"/*.svg.tpl)
+    else
+      templates=("$dir"/*.tpl)
+    fi
+    for template in "${templates[@]}"; do
       # A broken link has no content to hash, but it still counts by name.
       if [[ -r $template ]]; then
         echo "$(sha256sum <"$template" | cut -d' ' -f1) ${template##*/}"

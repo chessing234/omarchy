@@ -28,7 +28,7 @@ STUB
 chmod +x "$mock_bin/omarchy-theme-set"
 
 refresh() {
-  HOME="$test_home" OMARCHY_PATH="$omarchy_path" TEST_TMP="$test_tmp" PATH="$mock_bin:$PATH" \
+  HOME="$test_home" OMARCHY_PATH="$omarchy_path" TEST_TMP="$test_tmp" PATH="$mock_bin:$ROOT/bin:$PATH" \
     "$ROOT/bin/omarchy-theme-refresh" "$@"
 }
 
@@ -117,3 +117,27 @@ rm "$test_home/.local/state/omarchy/current/theme.name"
 refresh --if-changed || fail "a refresh with no current theme fails"
 [[ $(sets) == 14 ]] || fail "a refresh with no current theme sets one"
 pass "with no current theme there is nothing to refresh"
+
+# The theme set also draws the selected icon set. Updated artwork must not
+# wait for a manual theme switch, while another set's artwork is irrelevant.
+echo 'tokyo-night' >"$test_home/.local/state/omarchy/current/theme.name"
+mkdir -p "$omarchy_path/icons/papercraft" "$omarchy_path/icons/other" "$test_home/.config/omarchy/icons/papercraft"
+before=$(sets)
+echo '<svg>{{ accent }}</svg>' >"$omarchy_path/icons/papercraft/app.svg.tpl"
+refresh --if-changed
+[[ $(sets) == $((before + 1)) ]] || fail "an added icon template does not refresh the theme"
+echo '<svg>{{ foreground }}</svg>' >"$omarchy_path/icons/papercraft/app.svg.tpl"
+refresh --if-changed
+[[ $(sets) == $((before + 2)) ]] || fail "an edited icon template does not refresh the theme"
+echo '<svg/>' >"$test_home/.config/omarchy/icons/papercraft/app.svg"
+refresh --if-changed
+[[ $(sets) == $((before + 3)) ]] || fail "a user icon override does not refresh the theme"
+echo '<svg/>' >"$omarchy_path/icons/other/app.svg"
+refresh --if-changed
+[[ $(sets) == $((before + 3)) ]] || fail "an unused icon set refreshes the theme"
+rm "$omarchy_path/icons/papercraft/app.svg.tpl" "$test_home/.config/omarchy/icons/papercraft/app.svg"
+refresh --if-changed
+[[ $(sets) == $((before + 4)) ]] || fail "removed icon artwork does not refresh the theme"
+refresh --if-changed
+[[ $(sets) == $((before + 4)) ]] || fail "unchanged icon artwork refreshes the theme again"
+pass "selected icon templates and user artwork trigger refresh, but unused sets and unchanged artwork do not"
