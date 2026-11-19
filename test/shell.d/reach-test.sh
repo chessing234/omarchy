@@ -60,6 +60,11 @@ assertDeepEqual(reach.place(['laptop', 'desk'], 'desk', 'mini', 'right'), ['lapt
 assertDeepEqual(reach.place(['laptop', 'desk'], 'desk', 'mini', 'left'), ['mini', 'laptop', 'desk'], 'reach adds on the left')
 assertDeepEqual(reach.place(['laptop', 'desk', 'mini'], 'desk', 'laptop', 'right'), ['desk', 'mini', 'laptop'], 'reach moves rather than duplicates')
 
+assertDeepEqual(reach.place(['desk.home', 'laptop'], 'laptop', 'desk.office', 'right'), ['desk.home', 'laptop', 'desk.office'], 'reach keeps qualified machines from different domains distinct')
+assertDeepEqual(reach.remove(['desk.home', 'laptop', 'desk.office'], 'laptop', 'desk.home'), ['laptop', 'desk.office'], 'removing one qualified machine keeps the other domain')
+assertEqual(reach.addable(['desk.home', 'laptop'], 'laptop', [{ name: 'desk.office', online: true }]).length, 1, 'a different qualified machine remains available to add')
+assertDeepEqual(reach.tiles(['desk.home', 'laptop'], 'DESK.HOME.', [], []).map(t => t.self), [true, false], 'qualified names ignore case and the DNS root dot')
+
 assertDeepEqual(reach.nudge(['a', 'desk', 'b'], 'desk', 'desk', 1), ['a', 'b', 'desk'], 'reach nudges right')
 assertDeepEqual(reach.nudge(['a', 'desk', 'b'], 'desk', 'desk', -1), ['desk', 'a', 'b'], 'reach nudges left')
 assertDeepEqual(reach.nudge(['a', 'desk'], 'desk', 'a', -1), ['a', 'desk'], 'reach keeps a nudge at the edge in place')

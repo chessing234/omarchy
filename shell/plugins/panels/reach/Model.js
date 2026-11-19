@@ -16,7 +16,10 @@ function shortName(name) {
 }
 
 function sameHost(a, b) {
-  return shortName(a) !== "" && shortName(a) === shortName(b)
+  var left = String(a || "").toLowerCase().replace(/\.$/, "")
+  var right = String(b || "").toLowerCase().replace(/\.$/, "")
+  if (left.indexOf(".") !== -1 && right.indexOf(".") !== -1) return left === right
+  return shortName(left) !== "" && shortName(left) === shortName(right)
 }
 
 function parseJson(raw) {
