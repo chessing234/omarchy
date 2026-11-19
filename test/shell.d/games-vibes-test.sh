@@ -25,6 +25,7 @@ shipped="$OMARCHY_PATH/default/games/vibes"
 mkdir -p "$shipped/chess" "$shipped/snake"
 cp "$ROOT/default/games/vibes.html" "$OMARCHY_PATH/default/games/"
 printf '<!doctype html><title>Chess</title>\n' >"$shipped/chess/index.html"
+printf "<meta content='Think &amp; play'\n name='description'>\n" >>"$shipped/chess/index.html"
 printf '<!doctype html><title>Shipped Snake</title>\n' >"$shipped/snake/index.html"
 export PATH="$mock_bin:$ROOT/bin:$PATH"
 export OMARCHY_TEST_ARGV="$test_tmp/argv"
@@ -48,8 +49,8 @@ games=$(sed -n 's:^const GAMES = \(.*\);$:\1:p' "$vibes/index.html" | sed 's/\\u
 [[ $(jq -r '[.[].name] | join(" ")' <<<"$games") == "chess snake tilt-maze" ]] ||
   fail "the list has each game folder with an index.html, shipped or made here, and nothing else" "$games"
 [[ $(jq -r '.[1].title' <<<"$games") == "Snake" ]] || fail "a game made here replaces the shipped game of its name" "$games"
-[[ $(jq -r '.[1].blurb' <<<"$games") == "Eat & grow" && $(jq -r '.[0].blurb' <<<"$games") == "" ]] ||
-  fail "a game's blurb is its description meta, and empty without one" "$games"
+[[ $(jq -r '.[1].blurb' <<<"$games") == "Eat & grow" && $(jq -r '.[0].blurb' <<<"$games") == "Think & play" && $(jq -r '.[2].blurb' <<<"$games") == "" ]] ||
+  fail "a game's blurb accepts HTML attributes and entities, and is empty without one" "$games"
 [[ $(jq -r '.[2].title' <<<"$games") == 'Tilt </script><script>alert(1)</script>' ]] || fail "a game is listed by its <title>" "$games"
 (( $(grep -c '</script>' "$vibes/index.html") == 1 )) || fail "a title can't end the list's script"
 pass "Game Vibes lists the games in ~/Games/vibes by their titles"
