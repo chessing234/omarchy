@@ -25,7 +25,11 @@ SH
 cat >"$test_tmp/bin/omarchy-pkg-add" <<'SH'
 #!/bin/bash
 printf '%s\n' "$*" >>"$PKG_ADDED"
-exit "${PKG_ADD_EXIT:-0}"
+(( ${PKG_ADD_EXIT:-0} == 0 )) || exit "$PKG_ADD_EXIT"
+[[ -n ${PKG_ADD_NOTHING:-} ]] && exit 0
+for package in "$@"; do
+  printf 'x\n' >"$OMARCHY_TESSDATA/${package#tesseract-data-}.traineddata"
+done
 SH
 chmod +x "$test_tmp/bin/"*
 export PKG_ADDED="$test_tmp/pkg-added"
@@ -70,3 +74,9 @@ if PKG_ADD_EXIT=1 GUM_CHOICE="chi_sim" omarchy-capture-ocr-languages choose >/de
 fi
 [[ $(omarchy-capture-ocr-languages) == "jpn+eng" ]] || fail "a failed install leaves the saved languages in place"
 pass "a failed install leaves the saved languages in place"
+
+if PKG_ADD_NOTHING=1 GUM_CHOICE="chi_sim" omarchy-capture-ocr-languages choose >/dev/null 2>&1; then
+  fail "a language still missing after the install is reported"
+fi
+[[ $(omarchy-capture-ocr-languages) == "jpn+eng" ]] || fail "a language still missing after the install is not saved"
+pass "a language still missing after the install is not saved"
