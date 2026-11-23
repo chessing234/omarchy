@@ -18,7 +18,17 @@ cat >"$test_tmp/bin/gum" <<'SH'
 cat > "$GUM_OPTIONS"
 printf '%s\n' "$GUM_CHOICE"
 SH
-chmod +x "$test_tmp/bin/gum"
+cat >"$test_tmp/bin/pacman" <<'SH'
+#!/bin/bash
+[[ $1 == "-Slq" ]] && printf '%s\n' ${PACMAN_PACKAGES:-}
+SH
+cat >"$test_tmp/bin/omarchy-pkg-add" <<'SH'
+#!/bin/bash
+printf '%s\n' "$*" >>"$PKG_ADDED"
+exit "${PKG_ADD_EXIT:-0}"
+SH
+chmod +x "$test_tmp/bin/"*
+export PKG_ADDED="$test_tmp/pkg-added"
 
 [[ $(omarchy-capture-ocr-languages) == "eng" ]] || fail "capture text defaults to English"
 pass "capture text defaults to English"
@@ -44,3 +54,19 @@ GUM_CHOICE=$'swe\neng' omarchy-capture-ocr-languages choose >/dev/null
 [[ $(cat "$GUM_OPTIONS") == $'eng\nswe' ]] || fail "the picker offers installed languages without osd"
 [[ $(omarchy-capture-ocr-languages) == "swe+eng" ]] || fail "the picker saves the languages it was given and skips osd"
 pass "the picker saves the languages it was given and skips osd"
+[[ ! -e $PKG_ADDED ]] || fail "choosing installed languages installs nothing"
+pass "choosing installed languages installs nothing"
+
+export PACMAN_PACKAGES="tesseract tesseract-data-eng tesseract-data-jpn tesseract-data-osd tesseract-data-chi_sim"
+GUM_CHOICE=$'jpn\neng' omarchy-capture-ocr-languages choose >/dev/null
+[[ $(cat "$GUM_OPTIONS") == $'eng\nswe\nchi_sim\njpn' ]] || fail "the picker also offers languages it can install, once each and after the installed ones"
+pass "the picker also offers languages it can install, once each and after the installed ones"
+[[ $(cat "$PKG_ADDED") == "tesseract-data-jpn" ]] || fail "the picker installs only the chosen languages that are missing"
+[[ $(omarchy-capture-ocr-languages) == "jpn+eng" ]] || fail "an installed language is saved in the order it was chosen"
+pass "the picker installs the missing language it was given and saves it"
+
+if PKG_ADD_EXIT=1 GUM_CHOICE="chi_sim" omarchy-capture-ocr-languages choose >/dev/null 2>&1; then
+  fail "a failed install is reported"
+fi
+[[ $(omarchy-capture-ocr-languages) == "jpn+eng" ]] || fail "a failed install leaves the saved languages in place"
+pass "a failed install leaves the saved languages in place"
