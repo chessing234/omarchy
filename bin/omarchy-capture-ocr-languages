@@ -61,12 +61,30 @@ if [[ $1 == "choose" ]]; then
     [[ $name == "osd" ]] && continue
     langs+=("$name")
   done
+  # Languages the repositories offer follow the installed ones.
+  while IFS= read -r name; do
+    [[ $name == "osd" || -f $tessdata/$name.traineddata ]] || langs+=("$name")
+  done < <(pacman -Slq 2>/dev/null | sed -n 's/^tesseract-data-//p' | sort -u)
   if ((${#langs[@]} == 0)); then
-    echo "No Tesseract languages are installed." >&2
+    echo "No Tesseract languages are available." >&2
     exit 1
   fi
-  picked=$(printf '%s\n' "${langs[@]}" | gum choose --no-limit --header "OCR languages") || exit 0
+  picked=$(printf '%s\n' "${langs[@]}" | gum filter --no-limit --header "OCR languages") || exit 0
   [[ -n $picked ]] || exit 0
+  missing=()
+  while IFS= read -r name; do
+    [[ -f $tessdata/$name.traineddata ]] || missing+=("tesseract-data-$name")
+  done <<<"$picked"
+  if ((${#missing[@]} > 0)); then
+    omarchy-pkg-add "${missing[@]}"
+    # A deferred or already satisfied install leaves nothing to read yet.
+    for package in "${missing[@]}"; do
+      if [[ ! -f $tessdata/${package#tesseract-data-}.traineddata ]]; then
+        echo "$package did not install ${package#tesseract-data-}.traineddata." >&2
+        exit 1
+      fi
+    done
+  fi
   joined=$(printf '%s\n' "$picked" | paste -sd+ -)
   write_langs "$joined"
   current
